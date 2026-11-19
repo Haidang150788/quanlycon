@@ -1,0 +1,13 @@
+# Bi mat + cau hinh rieng tung nha
+BI_MAT.txt
+cau-hinh.env
+worker/wrangler.toml
+worker/.dev.vars
+# Ghi chu rieng cua nha tac gia
+CLAUDE.md
+# Ban dung
+dist/
+agent/quanlycon
+worker/.wrangler/
+node_modules/
+.DS_Store

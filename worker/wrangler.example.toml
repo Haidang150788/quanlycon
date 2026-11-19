@@ -1,0 +1,29 @@
+# Chep thanh wrangler.toml roi sua 2 cho danh dau <<<.
+name = "quanlycon"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Cach 1 (de nhat): dung dia chi mien phi https://quanlycon.<ten-tai-khoan>.workers.dev
+workers_dev = true
+# Cach 2: co ten mien rieng tren Cloudflare thi bo # 3 dong duoi
+# routes = [
+#   { pattern = "quanlycon.ten-mien-cua-ban.com", custom_domain = true }
+# ]
+
+[vars]
+# Dia chi web cua ban (dung cho thong bao day; Apple can dia chi https that)  <<<
+VAPID_SUB = "https://quanlycon.ten-tai-khoan.workers.dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "quanlycon-db"
+database_id = "DAN-ID-TU-LENH-d1-create"   # <<< npx wrangler d1 create quanlycon-db
+migrations_dir = "migrations"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# Ba secret (scripts/tao-bi-mat.mjs in san lenh):
+#   npx wrangler secret put PIN | AGENT_TOKEN | VAPID_JWK
