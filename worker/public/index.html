@@ -87,6 +87,16 @@ label.ck small{display:block;color:var(--mo)}
 #xemLon{position:fixed;inset:0;background:#000d;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px}
 #xemLon img{max-width:100%;max-height:85vh;border-radius:6px}
 #xemLon div{color:#fff;font-size:13px;margin-top:8px;text-align:center;white-space:pre-line}
+#bangTat{background:var(--do);color:#fff;padding:12px 16px;font-size:15px;line-height:1.35}
+#bangTat b{display:block;font-size:16px}
+#bangTat small{display:block;opacity:.92;font-size:13px;margin-top:2px}
+.the.tat .luoi,.the.tat .nhom-dau{opacity:.4}
+.the.tat .nt.chon{border-color:var(--vien);background:transparent}
+.ghi-tat{border-left:4px solid var(--do);background:var(--nen);padding:8px 10px;border-radius:6px;font-size:13px;font-weight:600;color:var(--do);margin-bottom:4px}
+#hopXN{position:fixed;inset:0;background:#000a;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+#hopXN>div{background:var(--the);color:var(--chu);border-radius:14px;padding:18px;max-width:380px;width:100%;border-top:6px solid var(--do)}
+#hopXN h3{margin:0 0 8px;font-size:17px;color:var(--do)}
+#hopXN p{margin:0 0 14px;font-size:14px}
 .toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--toi);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9;box-shadow:0 4px 16px #0004}
 </style>
 </head>
@@ -106,6 +116,7 @@ label.ck small{display:block;color:var(--mo)}
   <div class="tt"><span class="cham" id="chamMay"></span><span id="ttMay">…</span></div>
   <div class="tt" style="margin-top:4px"><span class="cham" id="chamChan"></span><span id="ttChan">…</span></div>
 </header>
+<div id="bangTat" class="an" role="alert"><b id="bangTatTieuDe"></b><small id="bangTatGhi"></small></div>
 <main>
   <section class="the an" id="theYC">
     <h2>Con đang xin</h2>
@@ -135,8 +146,9 @@ label.ck small{display:block;color:var(--mo)}
     </div>
   </section>
 
-  <section class="the">
+  <section class="the" id="theNenTang">
     <h2>Chặn web, ứng dụng &amp; game</h2>
+    <div class="ghi-tat an" id="ghiTat">Không áp dụng — chặn đang TẮT nên danh sách dưới đây không có hiệu lực.</div>
     <div id="dsNhom"></div>
     <div class="nhom-dau">Website khác <span style="font-weight:400">mỗi dòng một tên miền</span></div>
     <textarea id="webKhac" placeholder="vd: shopee.vn"></textarea>
@@ -186,6 +198,11 @@ label.ck small{display:block;color:var(--mo)}
     <ul class="nk" id="nhatKy"></ul>
   </section>
 </main>
+<div id="hopXN" class="an" role="dialog" aria-modal="true"><div>
+  <h3>Lưu khi chặn đang TẮT?</h3>
+  <p>Lưu xong, con dùng được <b>mọi</b> nền tảng (Roblox, Facebook, TikTok…), kể cả những ô đang chọn là chặn.</p>
+  <div class="nut-hang"><button class="nut-phu" id="xnHuy">Huỷ, chưa lưu</button><button class="nut-do" id="xnLuu">Vẫn lưu, tắt chặn</button></div>
+</div></div>
 <div class="luu"><span class="bao an" id="chuaLuu">● Chưa lưu</span><button class="nut-cam" id="nutLuu">Lưu &amp; áp dụng</button></div>
 </div>
 
@@ -220,6 +237,23 @@ function demChon() {
   const n = document.querySelectorAll('.nt.chon').length;
   const tong = new Set(S.danh_muc.map((x) => x.ma)).size;
   $('demChon').textContent = $('bat').checked ? `Đang chọn ${n}/${tong} nền tảng` : 'Đang TẮT — con dùng thoải mái';
+  veTat();
+}
+// Bang do + lam mo danh sach khi chan tat: tat cong tac tong ma cac o van ghi "Dang chan" thi de tuong dang chan.
+function veTat() {
+  if (!S) return;
+  const daLuuBat = S.cau_hinh.bat, dangBat = $('bat').checked;
+  let td = '', ghi = '';
+  if (!daLuuBat && !dangBat) { td = 'Đang TẮT chặn — con dùng được mọi nền tảng'; ghi = 'Bật công tắc "Bật chặn" bên dưới rồi bấm Lưu để chặn lại.'; }
+  else if (!daLuuBat && dangBat) { td = 'Vẫn đang TẮT chặn — chưa lưu'; ghi = 'Bấm "Lưu & áp dụng" để bật chặn lại.'; }
+  else if (daLuuBat && !dangBat) { td = 'Sắp TẮT chặn'; ghi = 'Bấm Lưu thì con dùng được mọi nền tảng.'; }
+  $('bangTat').classList.toggle('an', !td);
+  $('bangTatTieuDe').textContent = td; $('bangTatGhi').textContent = ghi;
+  $('theNenTang').classList.toggle('tat', !dangBat);
+  $('ghiTat').classList.toggle('an', dangBat);
+  document.querySelectorAll('.nt').forEach((o) => {
+    o.querySelector('small').textContent = !dangBat ? (o.classList.contains('chon') ? 'Không áp dụng' : 'Cho phép') : (o.classList.contains('chon') ? 'Đang chặn' : 'Cho phép');
+  });
 }
 
 function veCauHinh() {
@@ -239,15 +273,14 @@ function veCauHinh() {
       o.className = 'nt' + (ch.nen_tang.includes(n.ma) ? ' chon' : ''); o.dataset.ma = n.ma;
       o.innerHTML = `<span class="ic" style="background:${n.mau}"></span><span><b></b><small></small></span>`;
       o.querySelector('.ic').textContent = n.chu; o.querySelector('b').textContent = n.ten;
-      const nhan = () => { o.querySelector('small').textContent = o.classList.contains('chon') ? 'Đang chặn' : 'Cho phép'; };
-      nhan();
-      o.onclick = () => { o.classList.toggle('chon'); nhan(); suaDoi(); };
+      o.querySelector('small').textContent = o.classList.contains('chon') ? 'Đang chặn' : 'Cho phép';
+      o.onclick = () => { o.classList.toggle('chon'); suaDoi(); };
       luoi.appendChild(o);
     }
     dau.querySelector('a').onclick = (e) => {
       e.preventDefault();
       const cac = [...luoi.children]; const het = cac.every((c) => c.classList.contains('chon'));
-      cac.forEach((c) => { c.classList.toggle('chon', !het); c.querySelector('small').textContent = het ? 'Cho phép' : 'Đang chặn'; });
+      cac.forEach((c) => c.classList.toggle('chon', !het));
       suaDoi();
     };
     box.append(dau, luoi);
@@ -290,6 +323,7 @@ function veTrangThai() {
   }
   if (!S.nhat_ky.length) nk.innerHTML = '<li style="color:var(--mo)">Chưa có gì</li>';
   veYeuCau();
+  veTat();
 }
 
 async function tai(giuSua) {
@@ -494,7 +528,17 @@ async function veBao() {
     };
   }
 }
+// Hop xac nhan tu ve (khong dung confirm() cua trinh duyet).
+function hoiXacNhan() {
+  return new Promise((ok) => {
+    $('hopXN').classList.remove('an');
+    const xong = (v) => { $('hopXN').classList.add('an'); ok(v); };
+    $('xnHuy').onclick = () => xong(false); $('xnLuu').onclick = () => xong(true);
+    $('hopXN').onclick = (e) => { if (e.target === $('hopXN')) xong(false); };
+  });
+}
 $('nutLuu').onclick = async () => {
+  if (!$('bat').checked && !(await hoiXacNhan())) return;
   const body = {
     bat: $('bat').checked,
     nen_tang: [...document.querySelectorAll('.nt.chon')].map((o) => o.dataset.ma),
