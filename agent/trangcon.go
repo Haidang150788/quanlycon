@@ -22,6 +22,7 @@ func (t *TacNhan) moTrangCon() {
 	mux.HandleFunc("/", t.trangChu)
 	mux.HandleFunc("/trang-thai", t.apiTrangThaiCon)
 	mux.HandleFunc("/xin", t.apiXinGio)
+	mux.HandleFunc("/ext/trang-thai", t.apiExt)
 	srv := &http.Server{Handler: chiNoiBo(mux), ReadTimeout: 10 * time.Second, WriteTimeout: 20 * time.Second}
 	ln, err := net.Listen("tcp", DiaChiTrangCon)
 	if err != nil {
@@ -38,7 +39,7 @@ func chiNoiBo(h http.Handler) http.Handler {
 			http.Error(w, "forbidden", 403)
 			return
 		}
-		if r.Method == "POST" {
+		if r.Method == "POST" && r.URL.Path != "/ext/trang-thai" { // /ext/: apiExt tu kiem Origin extension
 			if o := r.Header.Get("Origin"); o != "" && o != "http://"+host {
 				http.Error(w, "forbidden", 403)
 				return

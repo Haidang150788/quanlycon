@@ -114,21 +114,57 @@ func datChongLach() error {
 	return nil
 }
 
-func ghiDanhSachChan(url []string) error {
-	for _, k := range khoaTrinhDuyet {
-		duong := k.duong + `\URLBlocklist`
-		if err := registry.DeleteKey(registry.LOCAL_MACHINE, duong); err != nil && err != registry.ErrNotExist {
-			return fmt.Errorf("xoa %s: %w", duong, err)
+// Ghi danh sach dang so 1,2,3... vao <goc>\<ten>; ds rong => xoa khoa.
+func ghiDanhSachSo(goc, ten string, ds []string) error {
+	duong := goc + `\` + ten
+	if err := registry.DeleteKey(registry.LOCAL_MACHINE, duong); err != nil && err != registry.ErrNotExist {
+		return fmt.Errorf("xoa %s: %w", duong, err)
+	}
+	if len(ds) == 0 {
+		return nil
+	}
+	key, _, err := registry.CreateKey(registry.LOCAL_MACHINE, duong, registry.ALL_ACCESS)
+	if err != nil {
+		return err
+	}
+	defer key.Close()
+	for i, u := range ds {
+		_ = key.SetStringValue(strconv.Itoa(i+1), u)
+	}
+	return nil
+}
+
+// Chrome va Edge co the khac nhau: YouTube chi noi cho trinh duyet co extension dang chay (kenhyt.go).
+func ghiDanhSachChan(chrome, edge []string) error {
+	if err := ghiDanhSachSo(khoaTrinhDuyet[0].duong, "URLBlocklist", chrome); err != nil {
+		return err
+	}
+	return ghiDanhSachSo(khoaTrinhDuyet[1].duong, "URLBlocklist", edge)
+}
+
+// Ban 5: ep cai extension YouTube theo kenh. Co extension thi tat luon cong cu cho nha phat trien
+// (DevTools xoa duoc lop che tren trang) va che do nha phat trien (nap extension tu viet de go lop che).
+// Chuoi rong => go chinh sach cua trinh duyet do.
+func datExtension(chrome, edge string) error {
+	for i, dong := range []string{chrome, edge} {
+		goc := khoaTrinhDuyet[i].duong
+		ds := []string{}
+		if dong != "" {
+			ds = append(ds, dong)
 		}
-		if len(url) == 0 {
-			continue
+		if err := ghiDanhSachSo(goc, "ExtensionInstallForcelist", ds); err != nil {
+			return err
 		}
-		key, _, err := registry.CreateKey(registry.LOCAL_MACHINE, duong, registry.ALL_ACCESS)
+		key, _, err := registry.CreateKey(registry.LOCAL_MACHINE, goc, registry.ALL_ACCESS)
 		if err != nil {
 			return err
 		}
-		for i, u := range url {
-			_ = key.SetStringValue(strconv.Itoa(i+1), u)
+		if dong != "" {
+			_ = key.SetDWordValue("DeveloperToolsAvailability", 2)
+			_ = key.SetDWordValue("ExtensionDeveloperModeSettings", 1)
+		} else {
+			_ = key.DeleteValue("DeveloperToolsAvailability")
+			_ = key.DeleteValue("ExtensionDeveloperModeSettings")
 		}
 		key.Close()
 	}
@@ -138,18 +174,21 @@ func ghiDanhSachChan(url []string) error {
 func boChinhSach() {
 	for _, k := range khoaTrinhDuyet {
 		_ = registry.DeleteKey(registry.LOCAL_MACHINE, k.duong+`\URLBlocklist`)
+		_ = registry.DeleteKey(registry.LOCAL_MACHINE, k.duong+`\ExtensionInstallForcelist`)
 		if key, err := registry.OpenKey(registry.LOCAL_MACHINE, k.duong, registry.ALL_ACCESS); err == nil {
 			_ = key.DeleteValue("DnsOverHttpsMode")
 			_ = key.DeleteValue(k.anDanh)
 			_ = key.DeleteValue("BrowserGuestModeEnabled")
+			_ = key.DeleteValue("DeveloperToolsAvailability")
+			_ = key.DeleteValue("ExtensionDeveloperModeSettings")
 			key.Close()
 		}
 	}
 }
 
-func apDungChan(mien, url []string) error {
-	e1 := ghiHosts(mien)
-	e2 := ghiDanhSachChan(url)
+func apDungChan(d DanhSachChan) error {
+	e1 := ghiHosts(d.Mien)
+	e2 := ghiDanhSachChan(d.UrlChrome, d.UrlEdge)
 	if e1 != nil {
 		return fmt.Errorf("hosts: %w", e1)
 	}

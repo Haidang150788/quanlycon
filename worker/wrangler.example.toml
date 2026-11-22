@@ -13,6 +13,11 @@ workers_dev = true
 [vars]
 # Dia chi web cua ban (dung cho thong bao day; Apple can dia chi https that)  <<<
 VAPID_SUB = "https://quanlycon.ten-tai-khoan.workers.dev"
+# YouTube chi xem kenh duoc chon (tuy chon, xem extension/HUONG-DAN-DANG.md): ma extension sau khi dang
+# len Chrome Web Store / Edge Add-ons. De trong = khong ep cai, YouTube van chan han trong gio chan.
+# Edge dung luon ban tren Chrome Web Store thi ghi: EXT_EDGE = "<ma>;https://clients2.google.com/service/update2/crx"
+EXT_CHROME = ""
+EXT_EDGE = ""
 
 [[d1_databases]]
 binding = "DB"

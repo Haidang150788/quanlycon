@@ -18,8 +18,15 @@ import (
 
 func thuMucDuLieu() string { return "./du-lieu-thu" }
 
-func apDungChan(mien, url []string) error {
-	log.Printf("(gia) ap dung %d ten mien, %d url", len(mien), len(url))
+func apDungChan(d DanhSachChan) error {
+	log.Printf("(gia) ap dung %d ten mien, Chrome %d url, Edge %d url", len(d.Mien), len(d.UrlChrome), len(d.UrlEdge))
+	return nil
+}
+
+func datExtension(chrome, edge string) error {
+	if chrome != "" || edge != "" {
+		log.Printf("(gia) ep cai extension: Chrome %q, Edge %q", chrome, edge)
+	}
 	return nil
 }
 func datChongLach() error                       { return nil }

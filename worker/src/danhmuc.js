@@ -17,8 +17,15 @@ export const DANH_MUC = [
     mien: ['tiktok.com', 'www.tiktok.com', 'm.tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com', 'tiktokv.com'],
     exe: ['TikTok.exe'] },
   { ma: 'youtube', ten: 'YouTube', nhom: 'mxh', mau: '#ff0000', chu: '▶',
-    mien: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com'],
-    exe: [] },
+    // Them: trang xem YouTube "thay the" (extension khong kiem duoc kenh) => luon chan cung YouTube.
+    mien: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com',
+      'yewtu.be', 'invidious.io', 'inv.nadeko.net', 'invidious.nerdvpn.de', 'invidious.private.coffee', 'invidious.f5.si', 'iv.melmac.space',
+      'piped.video', 'piped.kavin.rocks', 'piped.private.coffee', 'poketube.fun', 'viewtube.io'],
+    // Co danh sach kenh duoc xem + extension dang chay trong trinh duyet => may con BO cac ten mien nay khoi
+    // danh sach chan cua trinh duyet do (extension tu chan theo kenh). Phan con lai cua `mien` (YouTube Music,
+    // trang thay the) van chan.
+    mien_theo_kenh: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'www.youtube-nocookie.com'],
+    exe: ['FreeTube.exe', 'Grayjay.exe'] },
   { ma: 'instagram', ten: 'Instagram', nhom: 'mxh', mau: '#e1306c', chu: 'Ig',
     mien: ['instagram.com', 'www.instagram.com', 'm.instagram.com'], exe: ['Instagram.exe'] },
   { ma: 'threads', ten: 'Threads', nhom: 'mxh', mau: '#111', chu: '@',
