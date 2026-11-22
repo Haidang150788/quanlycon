@@ -70,6 +70,19 @@ rồi chạy `scripts/build-exe.sh`. Ra `dist/quanlycon.exe` và `dist/CaiDat-Qu
 **File CaiDat chứa mã của bạn — đừng gửi công khai, cài xong thì xoá.**
 (Bản chép vào Program Files tự bị xoá mã, mã chỉ còn trong thư mục chỉ Admin đọc được.)
 
+## Bước 4 (tuỳ chọn) — YouTube chỉ xem các kênh bạn chọn
+
+Mặc định, giờ chặn là chặn hẳn YouTube. Muốn trong giờ chặn con vẫn xem được vài kênh học (giờ giải lao vẫn xem thoải mái):
+đăng extension trong thư mục `extension/` lên Chrome Web Store (phí 5 USD một lần, để chế độ *Unlisted*),
+ghi mã của nó vào `EXT_CHROME` trong `worker/wrangler.toml` rồi deploy. Máy con (bản ≥ 1.4.0) tự ép cài extension vào Chrome/Edge.
+Các bước chi tiết: [`extension/HUONG-DAN-DANG.md`](extension/HUONG-DAN-DANG.md).
+
+Sau đó thêm kênh trên web điện thoại, mục **YouTube: kênh được xem trong giờ học**: dán link kênh
+(`youtube.com/@ten`, `/channel/UC…`) hoặc link một video của kênh đó.
+
+Nếu extension chưa chạy trong trình duyệt nào thì giờ chặn trình duyệt đó vẫn chặn hẳn YouTube. Máy con chỉ mở YouTube
+cho trình duyệt nào mà extension vừa báo về trong 10 phút gần nhất.
+
 ## Cách chặn
 
 1. Chính sách Chrome/Edge (`URLBlocklist`), chặn cả tên miền con.
@@ -77,6 +90,12 @@ rồi chạy `scripts/build-exe.sh`. Ra `dist/quanlycon.exe` và `dist/CaiDat-Qu
 3. Luôn bật: tắt DNS-over-HTTPS, tắt ẩn danh/InPrivate, tắt tài khoản Guest (không thì lách được).
 4. Game/app: quét tiến trình mỗi 2 giây, khớp tên `.exe` thì đóng và hiện câu nhắn cho con.
 5. Khoá cài: phần mềm mới chạy ngoài `Windows`/`Program Files` bị tạm dừng, bố mẹ duyệt trên điện thoại (quá 2 phút thì đóng).
+
+6. YouTube theo kênh (nếu bật bước 4): extension xem video đang mở thuộc kênh nào (trình phát + oEmbed). Kênh không có trong danh sách thì dừng video và che trang.
+   Trong giờ chặn còn ẩn đề xuất, tìm kiếm, Shorts; YouTube Music và các trang xem YouTube "thay thế" (Invidious, Piped…) luôn bị chặn.
+   Chặn được cả video nhúng trên trang khác (`youtube.com/embed`, `youtube-nocookie.com`). Đã mở YouTube cho Chrome/Edge thì trong giờ chặn
+   máy con đóng các trình duyệt khác (Firefox, Cốc Cốc, Brave, Opera…), vì chúng không có extension. Extension bị ép cài thì con không gỡ hay tắt được.
+   Máy con cũng tắt DevTools và chế độ nhà phát triển của trình duyệt.
 
 Giờ lấy từ server, con đổi đồng hồ Windows không lách được.
 Danh sách nền tảng (tên miền + tên .exe) nằm ở `worker/src/danhmuc.js` — thêm vào rồi `npx wrangler deploy`,
@@ -88,11 +107,14 @@ không phải cài lại máy con. Luật giờ có **hai bản phải sửa cù
 - Phần mềm `.msi` cài theo người dùng không bị khoá cài bắt. Tiến trình lạ chạy được ~1 giây trước khi bị dừng.
 - Con chép game vào thư mục một app đã được duyệt thì lọt.
 - Trình duyệt khác Chrome/Edge (Firefox, Cốc Cốc…) chỉ chặn bằng file hosts — nên thêm chúng vào danh sách app bị chặn.
+- YouTube theo kênh: extension từ Chrome Web Store mà con tự cài (vd. trình chạy userscript) có thể gỡ lớp che; công cụ dòng lệnh (`curl`)
+  giả được tín hiệu "extension đang chạy" (chỉ có hại khi extension thật không chạy); trình duyệt lạ dạng portable phải nhờ khoá cài bắt.
+  Thẻ gợi ý video bên trong trình phát vẫn hiện, nhưng bấm vào video kênh khác thì vẫn bị chặn.
 
 ## Kiểm thử
 
 ```bash
-cd worker && npm test
+cd worker && npm test          # gồm luật extension/luat-kenh.js
 cd agent && go test ./... && GOOS=windows GOARCH=amd64 go vet ./...
 ```
 

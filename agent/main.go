@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-const PhienBan = "1.3.1"
+const PhienBan = "1.4.0"
 // Gan luc build (scripts/build-exe.sh): -X main.ServerMacDinh=https://... -X main.CauHoiBo=...
 // Bo trong thi luc cai se hoi dia chi server.
 var ServerMacDinh = ""
@@ -87,6 +87,10 @@ type TacNhan struct {
 	// Ban 4
 	gs     *GiamSat
 	daChup int64
+
+	// Ban 5
+	extLuc map[string]time.Time // "chrome"|"edge" => lan cuoi extension bao ve
+	daExt  string
 }
 
 type trangXin struct {
@@ -262,6 +266,28 @@ func (t *TacNhan) xuLyQuyetDinh(ds []QuyetDinh) {
 	}
 }
 
+func coKhong(b bool) string {
+	if b {
+		return "xem theo kênh"
+	}
+	return "chặn hẳn"
+}
+
+// Hien tren dien thoai canh ten may: extension YouTube co dang chay khong.
+func ghiChuExt(b *Ban, chrome, edge bool) string {
+	if b == nil || (b.ExtChrome == "" && b.ExtEdge == "") {
+		return ""
+	}
+	p := []string{}
+	if b.ExtChrome != "" {
+		p = append(p, "Chrome "+map[bool]string{true: "✓", false: "✗"}[chrome])
+	}
+	if b.ExtEdge != "" {
+		p = append(p, "Edge "+map[bool]string{true: "✓", false: "✗"}[edge])
+	}
+	return "Extension YouTube: " + strings.Join(p, ", ")
+}
+
 func khoaDanhSach(a, b []string) string {
 	x := append([]string{}, a...)
 	y := append([]string{}, b...)
@@ -280,28 +306,48 @@ func (t *TacNhan) nhip() {
 	}
 	biChan := DangChan(b, now)
 
-	var mien, url []string
-	if biChan {
-		mien, url = b.TenMien, b.UrlChan
-	}
-	k := khoaDanhSach(mien, url)
+	extChrome, extEdge := t.extDangSong()
+	d := TinhDanhSachChan(b, biChan, extChrome, extEdge)
+	mien := d.Mien
+	k := khoaDanhSach(mien, d.UrlChrome) + "|" + khoaDanhSach(nil, d.UrlEdge)
 	if k != t.daApDung {
-		if err := apDungChan(mien, url); err != nil {
+		if err := apDungChan(d); err != nil {
 			t.suKien("loi", "Không áp dụng được danh sách chặn: "+err.Error())
 		} else {
 			t.daApDung = k
 			if biChan {
-				t.suKien("ap_dung", fmt.Sprintf("Bắt đầu chặn %d tên miền, %d ứng dụng", len(mien), len(b.TienTrinh)))
+				ghi := ""
+				if len(b.KenhCho) > 0 && len(b.MienTheoKenh) > 0 {
+					ghi = fmt.Sprintf(" · YouTube theo %d kênh: Chrome %s, Edge %s", len(b.KenhCho), coKhong(len(d.UrlChrome) < len(b.UrlChan)), coKhong(len(d.UrlEdge) < len(b.UrlChan)))
+				}
+				t.suKien("ap_dung", fmt.Sprintf("Bắt đầu chặn %d tên miền, %d ứng dụng%s", len(mien), len(b.TienTrinh), ghi))
 			} else {
 				t.suKien("ap_dung", "Mở chặn (giờ giải lao / cho chơi tạm / tắt chặn)")
 			}
 		}
 	}
 
+	// Ep cai extension YouTube theo kenh khi server co ma extension (doi ma => ghi lai).
+	if ke := b.ExtChrome + "|" + b.ExtEdge; ke != t.daExt {
+		if err := datExtension(dongForcelist(b.ExtChrome, khoChrome), dongForcelist(b.ExtEdge, khoEdge)); err != nil {
+			t.suKien("loi", "Không đặt được chính sách cài extension: "+err.Error())
+		} else {
+			t.daExt = ke
+		}
+	}
+	t.mu.Lock()
+	t.ghiChu = ghiChuExt(b, extChrome, extEdge)
+	t.mu.Unlock()
+
 	if biChan {
 		ds := map[string]bool{}
 		for _, e := range b.TienTrinh {
 			ds[strings.ToLower(e)] = true
+		}
+		if d.DongTrinhDuyetKhac {
+			for _, e := range trinhDuyetKhongExt {
+				ds[e] = true
+			}
 		}
 		if !t.chanTruoc && b.DongTrinhDuyet {
 			for _, e := range trinhDuyet {

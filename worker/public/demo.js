@@ -7,7 +7,7 @@
     cau_hinh: { bat: true, nen_tang: dm.map((x) => x.ma).filter((m) => m !== 'minecraft'), web_khac: ['shopee.vn'],
       giai_lao: [{ tu: '11:30', den: '12:30' }, { tu: '19:30', den: '20:30' }], dong_trinh_duyet: true, khoa_cai: true, chup_phut: 10, chup_luc: 0, mo_tam_den: 0, khoa_luc: 0 },
     dang_chan: true, danh_muc: dm, nhom: [{"ma":"mxh","ten":"Mạng xã hội"},{"ma":"game","ten":"Game"}],
-    may: [{ id: 'may-cua-con', ten: 'MAY-CUA-CON', phien_ban: '1.3.0', lan_cuoi: now - 12000, dang_chan: 1, ghi_chu: '' }],
+    may: [{ id: 'may-cua-con', ten: 'MAY-CUA-CON', phien_ban: '1.4.0', lan_cuoi: now - 12000, dang_chan: 1, ghi_chu: 'Extension YouTube: Chrome ✓, Edge ✗' }],
     yeu_cau: [
       { id: 'demo-gio', ts: now - 2 * p, loai: 'gio', phut: 30, ly_do: 'con làm nốt bài tập nhóm trên Zalo ạ' },
       { id: 'demo-chay', ts: now - 20000, loai: 'chay', ten: 'FreeVPN_Setup.exe', duong_dan: 'C:\\Users\\Con\\Downloads\\FreeVPN_Setup.exe', kich_thuoc: 18874368 },
@@ -21,9 +21,15 @@
       { ts: now - 2 * p, loai: 'xin_gio', noi_dung: 'Con xin thêm 30 phút: con làm nốt bài tập nhóm trên Zalo ạ' },
       { ts: now - 25 * p, loai: 'dong', noi_dung: 'Đã đóng robloxplayerbeta.exe' },
       { ts: now - 3 * 3600e3, loai: 'ap_dung', noi_dung: 'Bắt đầu chặn 58 tên miền, 30 ứng dụng' },
-      { ts: now - 4 * 3600e3, loai: 'khoi_dong', noi_dung: 'Phần mềm khởi động, phiên bản 1.3.0' },
+      { ts: now - 4 * 3600e3, loai: 'khoi_dong', noi_dung: 'Phần mềm khởi động, phiên bản 1.4.0' },
+      { ts: now - 864e5, loai: 'kenh', noi_dung: 'Bố mẹ cho xem kênh YouTube TED-Ed' },
     ],
     han_chay_ms: 120000, push_khoa: null, so_thiet_bi_bao: 0,
+    co_extension: true,
+    kenh: [
+      { id: 'UC4a-Gbdw7vOaccHmFo40b9g', ten: 'Khan Academy', handle: '@khanacademy', ts: now - 3 * 864e5 },
+      { id: 'UCsooa4yRKGN_zEE8iknghZA', ten: 'TED-Ed', handle: '@TEDEd', ts: now - 864e5 },
+    ],
   };
   const anh = [
     { id: 1, ts: now - 18 * p, ly_do: 'định kỳ', kich_thuoc: 78456, cua_so: 'chrome.exe — cách vượt chặn web trên máy tính - Tìm trên Google - Google Chrome' },
@@ -47,6 +53,14 @@
     if (duong.startsWith('yeu-cau/')) { S.yeu_cau = S.yeu_cau.filter((y) => !duong.endsWith(y.id)); return S; }
     if (duong === 'cau-hinh') { Object.assign(S.cau_hinh, body); return S; }
     if (duong === 'mo-tam') { S.cau_hinh.mo_tam_den = body.phut ? Date.now() + body.phut * p : 0; S.dang_chan = !body.phut; return S; }
+    if (duong === 'kenh/xoa') { S.kenh = S.kenh.filter((k) => k.id !== body.id); return S; }
+    if (duong === 'kenh/them') {
+      // Ban that hoi YouTube; ban xem thu chi lay chu sau @ trong link.
+      const m = /@([\w.-]+)/.exec(body.link || '');
+      if (!m) throw new Error('Bản xem thử chỉ nhận link dạng youtube.com/@ten');
+      if (!S.kenh.some((k) => k.handle === '@' + m[1])) S.kenh.push({ id: 'UCdemo' + Math.random().toString(36).slice(2, 20).padEnd(18, 'x'), ten: m[1], handle: '@' + m[1], ts: Date.now() });
+      return S;
+    }
     if (duong === 'quy-tac/xoa') { S.quy_tac = S.quy_tac.filter((q) => q.id !== body.id); return S; }
     return S;
   };

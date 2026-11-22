@@ -34,6 +34,11 @@ type Ban struct {
 	// Ban 4 — chup man hinh
 	ChupPhut int   `json:"chup_phut"` // 0 = tat
 	ChupLuc  int64 `json:"chup_luc"`  // Sep bam "Chup ngay"
+	// Ban 5 — YouTube theo kenh (kenhyt.go)
+	MienTheoKenh []string `json:"mien_theo_kenh"` // ten mien YouTube duoc noi khi extension dang chay
+	KenhCho      []KenhYT `json:"kenh_cho"`
+	ExtChrome    string   `json:"ext_chrome"` // "ma" hoac "ma;update_url"
+	ExtEdge      string   `json:"ext_edge"`
 }
 
 type QuyetDinh struct {

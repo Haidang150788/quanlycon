@@ -11,3 +11,4 @@ agent/quanlycon
 worker/.wrangler/
 node_modules/
 .DS_Store
+agent/du-lieu-thu/

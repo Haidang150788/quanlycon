@@ -7,6 +7,7 @@
 import { DANH_MUC, NHOM, MA_HOP_LE } from './danhmuc.js';
 import { dangChan, chuanHoaCauHinh, quyTacTuDuongDan } from './luat.js';
 import { guiPush, khoaCongKhai } from './push.js';
+import { traKenh } from './kenh.js';
 
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {
@@ -127,6 +128,10 @@ async function banChoMay(env, ch, now) {
     if (!w.includes('/')) { mien.add(host); if (!host.startsWith('www.')) mien.add('www.' + host); }
   }
   const qt = await docQuyTac(env);
+  // YouTube theo kenh: may con chi noi YouTube cho trinh duyet co extension dang chay (xem agent/kenhyt.go).
+  const yt = DANH_MUC.find((n) => n.ma === 'youtube');
+  const coYT = !!yt && ch.nen_tang.includes('youtube');
+  const kenh = coYT ? await dsKenh(env) : [];
   const { results: qd } = await env.DB.prepare(
     "SELECT id,loai,trang_thai,xu_ly_phut AS phut FROM yeu_cau WHERE trang_thai!='cho' AND xu_ly_luc > ?").bind(now - 15 * 60e3).all();
   return {
@@ -146,7 +151,47 @@ async function banChoMay(env, ch, now) {
     cho_hash: qt.filter((q) => q.cho_phep && q.loai === 'hash').map((q) => q.gia_tri),
     cam_hash: qt.filter((q) => !q.cho_phep && q.loai === 'hash').map((q) => q.gia_tri),
     quyet_dinh: qd,
+    mien_theo_kenh: coYT && kenh.length ? yt.mien_theo_kenh : [],
+    kenh_cho: kenh.map(({ id, handle, ten }) => ({ id, handle, ten })),
+    // Ma extension tren Chrome Web Store / Edge Add-ons (wrangler.toml [vars]). Trong => khong ep cai.
+    ext_chrome: String(env.EXT_CHROME || ''),
+    ext_edge: String(env.EXT_EDGE || ''),
   };
+}
+
+// ---------- Kenh YouTube duoc xem trong gio chan ----------
+const TOI_DA_KENH = 100;
+async function dsKenh(env) {
+  try {
+    const { results } = await env.DB.prepare('SELECT id,ten,handle,ts FROM kenh_yt ORDER BY ts').all();
+    return results;
+  } catch (e) {
+    // Quen chay migration 0005 khi deploy => khong lam hong ca trang (YouTube van chan han).
+    if (/no such table/i.test(String(e && e.message))) return [];
+    throw e;
+  }
+}
+
+async function themKenh(req, env) {
+  const { link } = await docBody(req);
+  const k = await traKenh(String(link || '').slice(0, 500));
+  if (k.loi) return loi(k.loi);
+  const dem = await env.DB.prepare('SELECT COUNT(*) n FROM kenh_yt').first();
+  const cu = await env.DB.prepare('SELECT id FROM kenh_yt WHERE id=?').bind(k.id).first();
+  if (!cu && dem.n >= TOI_DA_KENH) return loi(`Tối đa ${TOI_DA_KENH} kênh`);
+  await env.DB.prepare(`INSERT INTO kenh_yt(id,ten,handle,ts) VALUES(?,?,?,?)
+    ON CONFLICT(id) DO UPDATE SET ten=excluded.ten, handle=excluded.handle`).bind(k.id, k.ten, k.handle, Date.now()).run();
+  if (!cu) await ghiNhatKy(env, null, 'kenh', `Bố mẹ cho xem kênh YouTube ${k.ten || k.handle || k.id}`);
+  return trangThai(env);
+}
+
+async function xoaKenh(req, env) {
+  const { id } = await docBody(req);
+  const r = await env.DB.prepare('SELECT ten,handle FROM kenh_yt WHERE id=?').bind(String(id || '')).first();
+  if (!r) return loi('Không thấy kênh', 404);
+  await env.DB.prepare('DELETE FROM kenh_yt WHERE id=?').bind(String(id)).run();
+  await ghiNhatKy(env, null, 'kenh', `Bố mẹ bỏ kênh YouTube ${r.ten || r.handle || id}`);
+  return trangThai(env);
 }
 
 function laMay(req, env) {
@@ -234,12 +279,13 @@ async function trangThai(env) {
   const now = Date.now();
   await donHetHan(env, now);
   const ch = await docCauHinh(env);
-  const [may, nk, yc, qt, sub] = await Promise.all([
+  const [may, nk, yc, qt, sub, kenh] = await Promise.all([
     env.DB.prepare('SELECT * FROM may ORDER BY lan_cuoi DESC').all(),
     env.DB.prepare('SELECT ts,may,loai,noi_dung FROM nhat_ky ORDER BY id DESC LIMIT 80').all(),
     env.DB.prepare("SELECT id,ts,loai,phut,ly_do,ten,duong_dan,kich_thuoc FROM yeu_cau WHERE trang_thai='cho' ORDER BY ts").all(),
     docQuyTac(env),
     env.DB.prepare('SELECT COUNT(*) n FROM push_sub').first(),
+    dsKenh(env),
   ]);
   return json({
     now, cau_hinh: ch, dang_chan: dangChan(ch, now),
@@ -248,6 +294,7 @@ async function trangThai(env) {
     han_chay_ms: HAN_CHAY_MS,
     push_khoa: env.VAPID_JWK ? khoaCongKhai(JSON.parse(env.VAPID_JWK)) : null,
     so_thiet_bi_bao: sub.n,
+    kenh, co_extension: !!(env.EXT_CHROME || env.EXT_EDGE),
   });
 }
 
@@ -421,6 +468,8 @@ export default {
         const m = /^\/api\/yeu-cau\/([0-9a-f-]{36})$/.exec(p);
         if (m && req.method === 'POST') return await xuLyYeuCau(req, env, m[1]);
         if (p === '/api/quy-tac/xoa' && req.method === 'POST') return await xoaQuyTac(req, env);
+        if (p === '/api/kenh/them' && req.method === 'POST') return await themKenh(req, env);
+        if (p === '/api/kenh/xoa' && req.method === 'POST') return await xoaKenh(req, env);
         if (p === '/api/chup' && req.method === 'POST') return await chupNgay(env);
         if (p === '/api/anh' && req.method === 'GET') return await dsAnh(env, url);
         const ma = /^\/api\/anh\/(\d+)$/.exec(p);

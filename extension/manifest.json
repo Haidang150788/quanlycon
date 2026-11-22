@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Quản lý con — YouTube theo kênh",
+  "version": "1.0.0",
+  "description": "Trong giờ học chỉ xem được các kênh YouTube bố mẹ chọn. Dùng kèm phần mềm Quản lý máy tính của con.",
+  "minimum_chrome_version": "111",
+  "permissions": ["alarms", "storage"],
+  "host_permissions": ["http://127.0.0.1:47123/*", "https://www.youtube.com/*"],
+  "background": { "service_worker": "nen.js" },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": ["trinh-phat.js"],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://*.youtube-nocookie.com/*"],
+      "js": ["luat-kenh.js", "noi-dung.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "icons": { "16": "icon-16.png", "48": "icon-48.png", "128": "icon-128.png" }
+}

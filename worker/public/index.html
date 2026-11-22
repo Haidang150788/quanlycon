@@ -154,6 +154,17 @@ label.ck small{display:block;color:var(--mo)}
     <textarea id="webKhac" placeholder="vd: shopee.vn"></textarea>
   </section>
 
+  <section class="the" id="theKenh">
+    <h2>YouTube: kênh được xem trong giờ học</h2>
+    <p style="margin:0 0 10px;color:var(--mo);font-size:13px" id="ghiKenh"></p>
+    <div class="nut-hang" style="grid-template-columns:1fr auto">
+      <input type="text" id="linkKenh" placeholder="Dán link kênh hoặc link 1 video của kênh" autocomplete="off" inputmode="url">
+      <button class="nut-cam" id="nutThemKenh">Thêm</button>
+    </div>
+    <div class="loi" id="loiKenh"></div>
+    <div id="dsKenh"></div>
+  </section>
+
   <section class="the">
     <h2>Giờ giải lao (lặp lại mỗi ngày)</h2>
     <p style="margin:0 0 10px;color:var(--mo);font-size:13px">Trong khung giờ này con được dùng mạng xã hội &amp; game. Để trống = không dùng. Gõ 11:30 hoặc 11h30.</p>
@@ -324,7 +335,47 @@ function veTrangThai() {
   if (!S.nhat_ky.length) nk.innerHTML = '<li style="color:var(--mo)">Chưa có gì</li>';
   veYeuCau();
   veTat();
+  veKenh();
 }
+
+// ---------- Kenh YouTube duoc xem trong gio hoc (luu ngay, khong can bam Luu) ----------
+function veKenh() {
+  const ds = S.kenh || [];
+  const chanYT = S.cau_hinh.nen_tang.includes('youtube');
+  let ghi;
+  if (!S.co_extension) ghi = '⚠️ Server chưa có mã extension (EXT_CHROME / EXT_EDGE) nên trong giờ học YouTube vẫn bị chặn hẳn. Danh sách dưới đây có tác dụng sau khi cài extension.';
+  else if (!chanYT) ghi = 'YouTube đang được phép cả ngày (không chọn trong danh sách chặn) — danh sách này chưa có tác dụng.';
+  else if (!ds.length) ghi = 'Chưa có kênh nào: trong giờ học YouTube bị chặn hẳn. Thêm kênh để con xem được riêng các kênh đó. Giờ giải lao con xem YouTube thoải mái.';
+  else ghi = `Trong giờ học con chỉ xem được video của ${ds.length} kênh dưới đây; trang chủ, tìm kiếm, Shorts và kênh khác bị che. Giờ giải lao xem thoải mái.`;
+  $('ghiKenh').textContent = ghi;
+  const box = $('dsKenh'); box.innerHTML = '';
+  for (const k of ds) {
+    const d = document.createElement('div'); d.className = 'qt';
+    const s = document.createElement('span');
+    const b = document.createElement('b'); b.textContent = k.ten || k.handle || k.id; s.appendChild(b);
+    const sm = document.createElement('small'); sm.style.cssText = 'display:block;color:var(--mo)'; sm.textContent = k.handle || k.id; s.appendChild(sm);
+    d.append(s, nut('Bỏ', 'nut-phu', async () => {
+      try { S = await api('kenh/xoa', { id: k.id }); veKenh(); toast('Đã bỏ ' + (k.ten || k.handle)); }
+      catch (e) { if (e.message !== 'chua-dang-nhap') toast(e.message); }
+    }));
+    box.appendChild(d);
+  }
+}
+$('nutThemKenh').onclick = async () => {
+  const link = $('linkKenh').value.trim();
+  $('loiKenh').textContent = '';
+  if (!link) { $('loiKenh').textContent = 'Dán link kênh (youtube.com/@ten) hoặc link một video của kênh'; return; }
+  $('nutThemKenh').disabled = true; $('nutThemKenh').textContent = 'Đang tìm…';
+  try {
+    const truoc = new Set((S.kenh || []).map((k) => k.id));
+    S = await api('kenh/them', { link });
+    const moi = (S.kenh || []).find((k) => !truoc.has(k.id));
+    $('linkKenh').value = ''; veKenh();
+    toast(moi ? 'Đã thêm kênh ' + (moi.ten || moi.handle) : 'Kênh này đã có trong danh sách');
+  } catch (e) { if (e.message !== 'chua-dang-nhap') $('loiKenh').textContent = e.message; }
+  $('nutThemKenh').disabled = false; $('nutThemKenh').textContent = 'Thêm';
+};
+$('linkKenh').onkeydown = (e) => { if (e.key === 'Enter') $('nutThemKenh').click(); };
 
 async function tai(giuSua) {
   try {
