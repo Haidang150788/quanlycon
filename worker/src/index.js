@@ -162,8 +162,14 @@ async function banChoMay(env, ch, now) {
 // ---------- Kenh YouTube duoc xem trong gio chan ----------
 const TOI_DA_KENH = 100;
 async function dsKenh(env) {
-  const { results } = await env.DB.prepare('SELECT id,ten,handle,ts FROM kenh_yt ORDER BY ts').all();
-  return results;
+  try {
+    const { results } = await env.DB.prepare('SELECT id,ten,handle,ts FROM kenh_yt ORDER BY ts').all();
+    return results;
+  } catch (e) {
+    // Quen chay migration 0005 khi deploy => khong lam hong ca trang (YouTube van chan han).
+    if (/no such table/i.test(String(e && e.message))) return [];
+    throw e;
+  }
 }
 
 async function themKenh(req, env) {
